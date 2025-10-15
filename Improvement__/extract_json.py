@@ -2,28 +2,63 @@ import json
 
 def extract_sections(json_path, key=None):
     """
-    Extract specific section from resume JSON.
-    If key is None, returns all sections flattened.
+    Extract structured sections from a resume JSON file in nested format.
+
+    Parameters:
+    - json_path: path to the JSON resume file
+    - key: optional; if provided, only extracts that section ("Projects", "Work Experience", "Achievements")
+
+    Returns a dictionary with keys:
+    - "projects", "workExperience", "achievements"
+    Each contains a list of dicts with 'title'/'projectTitle' and 'description' list.
     """
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
-        print(f"error reading resume json: {e}")
-        return []
+        print(f"❌ Error reading resume JSON: {e}")
+        return {}
 
-    sections = []
-    keys_to_extract = [key] if key else ['Projects', 'Work Experience', 'Achievements']
+    # Mapping JSON keys to structured keys
+    key_map = {
+        "Projects": "projects",
+        "Work Experience": "workExperience",
+        "Achievements": "achievements"
+    }
 
-    if isinstance(data, dict):
-        for k in keys_to_extract:
-            raw = data.get(k) or []
-            for item in raw:
-                if isinstance(item, dict) and 'descriptions' in item:
-                    for desc in item['descriptions']:
-                        if isinstance(desc, str) and desc.strip():
-                            sections.append(desc.strip())
-                elif isinstance(item, str) and item.strip():
-                    sections.append(item.strip())
+    # Decide which keys to extract
+    json_keys_to_extract = [key] if key else key_map.keys()
 
-    return sections
+    output = {
+        "projects": [],
+        "workExperience": [],
+        "achievements": []
+    }
+
+    for json_key in json_keys_to_extract:
+        struct_key = key_map[json_key]
+        items = data.get(json_key, [])
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue  # skip invalid entries
+
+            # Determine title field
+            title_key = "projectTitle" if struct_key == "projects" else "title"
+            title = item.get("project_name") or item.get("job_title") or item.get("title") or ""
+
+            # Determine description list
+            if struct_key == "achievements":
+                # Achievements usually have a single description string
+                desc = item.get("description", "")
+                descriptions = [desc.strip()] if isinstance(desc, str) and desc.strip() else []
+            else:
+                descs = item.get("descriptions", [])
+                descriptions = [d.strip() for d in descs if isinstance(d, str) and d.strip()]
+
+            output[struct_key].append({
+                title_key: title,
+                "description": descriptions
+            })
+
+    return output

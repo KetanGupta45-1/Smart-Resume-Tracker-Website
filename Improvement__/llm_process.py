@@ -1,42 +1,72 @@
 from langchain.schema import AIMessage
 
-def get_resume_prompt(section_name, sections_list, role=None):
+def get_resume_prompt(title, descriptions, section_name, role=None):
+    """
+    Construct a prompt for LLM to improve the descriptions for a single item.
+    """
     role_text = f"for the role of {role}" if role else ""
-    sections_text = "\n".join(f"- {s}" for s in sections_list)
+    descriptions_text = "\n".join(f"- {desc}" for desc in descriptions)
 
     prompt = f"""
-You are a professional resume editor. Rewrite the following {section_name} sections {role_text} 
-to make them more official, concise, and impactful, using resume-style language.
-Keep the meaning intact but improve readability, quantification, and action words.
+You are a professional resume editor. Improve the descriptions for the {section_name} entry titled "{title}" {role_text}.
+Make them more official, concise, impactful, and resume-style.
+Keep the meaning intact, use quantifiable achievements where possible, and strong action verbs.
+IMPORTANT: Do not add '-' in start of new descriptions.
 
-Sections to improve:
-{sections_text}
+Descriptions to improve:
+{descriptions_text}
 
-Return the improved sections as a numbered list, keeping each item separate.
+Return the improved descriptions as a list, keeping each item separate.
 Do not add extra commentary.
 """
     return prompt
 
-def llm_process_grouped(sections_dict, llm, role=None):
-    grouped_output = {}
-    for section_name, cleaned_sections in sections_dict.items():
-        if not cleaned_sections:
-            continue
+def llm_process_grouped(structured_sections, llm, role=None):
+    """
+    structured_sections: dict with keys 'projects', 'workExperience', 'achievements'
+    Each value is a list of dicts with 'title'/'projectTitle' and 'description' list.
+    Returns same structure with improved descriptions.
+    """
+    improved_sections = {
+        "projects": [],
+        "workExperience": [],
+        "achievements": []
+    }
 
-        prompt = get_resume_prompt(section_name, cleaned_sections, role=role)
-        response = llm.invoke(prompt)
+    # Mapping to unify keys
+    section_map = {
+        "projects": "Projects",
+        "workExperience": "Work Experience",
+        "achievements": "Achievements"
+    }
 
-        raw_output = response.content if isinstance(response, AIMessage) else str(response)
+    for section_key, items in structured_sections.items():
+        for item in items:
+            title_key = "projectTitle" if section_key == "projects" else "title"
+            title = item.get(title_key, "")
+            descriptions = item.get("description", [])
+            if not descriptions:
+                improved_sections[section_key].append({title_key: title, "description": []})
+                continue
 
-        modified_sections = []
-        for line in raw_output.split("\n"):
-            line = line.strip()
-            if line and (line[0].isdigit() and line[1:3] in [". ", ") "]):
-                line = line.split(". ", 1)[1] if ". " in line else line
-                modified_sections.append(line.strip())
-            elif line:
-                modified_sections.append(line.strip())
+            # Create prompt for LLM
+            prompt = get_resume_prompt(title, descriptions, section_map[section_key], role=role)
+            response = llm.invoke(prompt)
+            raw_output = response.content if isinstance(response, AIMessage) else str(response)
 
-        grouped_output[section_name] = modified_sections
+            # Parse improved descriptions as a list
+            improved_descriptions = []
+            for line in raw_output.split("\n"):
+                line = line.strip()
+                if line and (line[0].isdigit() and (". " in line or ") " in line)):
+                    # remove numbering if exists
+                    line = line.split(". ", 1)[-1] if ". " in line else line.split(") ", 1)[-1]
+                    improved_descriptions.append(line.strip())
+                elif line:
+                    improved_descriptions.append(line.strip())
 
-    return grouped_output
+            # Append back to the same structure
+            improved_item = {title_key: title, "description": improved_descriptions}
+            improved_sections[section_key].append(improved_item)
+
+    return improved_sections

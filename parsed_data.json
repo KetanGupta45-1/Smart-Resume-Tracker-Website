@@ -1,60 +1,69 @@
 {
   "Profile": {
     "name": "Shivank Mahor",
-    "email": "Shivank88215@gmail.com",
+    "email": "shivank88215@gmail.com",
     "phone_number": "+91 9131278948",
     "country": "",
-    "github": "https://github.com/ShivankMahor",
-    "linkedin": "https://www.linkedin.com/in/shivank001",
+    "github": "https://github.com/Github",
+    "linkedin": "https://linkedin.com/LinkedIn",
     "summary": ""
   },
   "Education": [
     {
-      "institution_name": "Indian Institute of Information Technology",
-      "degree": "B.Tech",
-      "field_of_study": "Computer Science & Engineering",
+      "institution_name": "Indian Institute of Information Technology (IIIT), Sonepat",
+      "degree": "B.Tech in Computer Science & Engineering",
+      "field_of_study": "",
       "cgpa_or_percent": "",
-      "start_date": "November 2022",
-      "end_date": "June 2026(Expected)"
+      "start_date": "Nov 2022",
+      "end_date": "June 2026"
     }
   ],
   "Work Experience": [
     {
       "company_name": "DARWIN",
-      "job_title": "AI Automation & Full-Stack Intern",
+      "job_title": "Full-Stack Intern",
       "location": "Remote",
-      "start_date": "March 2025",
-      "end_date": "August 2025",
+      "start_date": "Mar 2025",
+      "end_date": "Aug 2025",
       "descriptions": [
-        "Developed and deployed multiple AI-driven systems combining LLM tool-calling, reactive orchestration loops, and custom workflows for internal automations.",
-        "Built orchestration pipelines using JavaScript and Python, integrating APIs, user prompts, and AI model calls for seamless reactive behavior.",
-        "Created a fully-automated Intern Hiring Platform handling 1000+ applicants daily, using quiz-based and timed voice assessments, evaluated with LLMs.",
-        "Deployed the platform on Vercel, ensured real-time performance, and implemented analytics and role-based access control.",
-        "Engineered full-stack features including dashboards, user interfaces, and REST APIs to monitor and manage automation flows."
+        "Built 3+ AI-driven automation systems using LLM tool-calling and orchestration loops, improving workflow efficiency.",
+        "Developed an automated Intern Hiring Platform processing 1000+ applicants/day with quiz and voice assessments.",
+        "Engineered multi-agent orchestration pipelines (JS/Python) chaining LLM calls and APIs, reducing task time by 50%.",
+        "Integrated real-time audio with AI agents for live, human-like task execution."
       ]
     }
   ],
   "Projects": [
     {
-      "project_name": "Attendance Management System",
-      "tech_stack": "MERN Stack, Axios, Tailwind CSS",
+      "project_name": "TalentFlow – A Mini Hiring Platform",
+      "tech_stack": "React, TailwindCSS, Dexie (IndexedDB), Mirage.js",
       "start_date": "",
       "end_date": "",
       "descriptions": [
-        "Real-time attendance tracker used by multiple professors at my college.",
-        "Role-based access for teachers with secure subject-wise tracking.",
-        "Generates Date-wise, Monthly, and Semester-wise reports."
+        "Built a modern, responsive hiring platform frontend with clean UI/UX and realistic data handling.",
+        "Implemented optimistic UI updates with rollback logic for failed requests, simulating real-world latency and server error rates.",
+        "Engineered local data persistence, pagination, and client-side filters for 1000+ seeded candidates and 25+ job records."
       ]
     },
     {
-      "project_name": "Exam Duty / Room Allotment System",
-      "tech_stack": "Next.js, React Hook Form, Zod, Shadcn, Tailwind",
+      "project_name": "Personal Portfolio Website",
+      "tech_stack": "React, Framer Motion, Tailwind CSS",
       "start_date": "",
       "end_date": "",
       "descriptions": [
-        "Automated faculty exam duty and room allocation system.",
-        "Fair duty distribution with form validation using React Hook Form & Zod.",
-        "Built responsive UI with Shadcn components and Tailwind CSS."
+        "Built a portfolio with fluid, responsive layouts and complex UI animations, achieving a 95+ score on Google PageSpeed Insights for Performance and Best Practices."
+      ]
+    },
+    {
+      "project_name": "Attendance Management System",
+      "tech_stack": "MERN app",
+      "start_date": "",
+      "end_date": "",
+      "descriptions": [
+        "MERN app adopted by 5+ professors for 300+ students, reducing manual attendance entry by 90%.",
+        "Secure role-based JWT authentication and subject-wise tracking to ensure data integrity.",
+        "Generates detailed attendance reports (daily, monthly, semester-wise) automatically.",
+        "Optimized database queries and schema using MongoDB & Mongoose for fast, real-time updates."
       ]
     }
   ],
@@ -63,14 +72,13 @@
     {
       "category": "Languages",
       "skills": [
-        "C",
-        "C++",
-        "Java",
-        "Python",
         "JavaScript",
-        "HTML",
-        "CSS",
-        "Typescript"
+        "TypeScript",
+        "Python",
+        "Java",
+        "C++",
+        "SQL",
+        "HTML & CSS"
       ]
     },
     {
@@ -78,46 +86,62 @@
       "skills": [
         "React",
         "Next.js",
-        "Node.js",
-        "Express",
-        "React Hook Form",
-        "Zod",
+        "Framer Motion",
+        "Tailwind CSS",
+        "Shadcn",
         "Vite"
       ]
     },
     {
-      "category": "Databases",
+      "category": "Backend",
+      "skills": [
+        "Node.js",
+        "Express.js"
+      ]
+    },
+    {
+      "category": "Databases & Tools",
       "skills": [
         "MongoDB",
         "Mongoose",
-        "SQL"
-      ]
-    },
-    {
-      "category": "Styling",
-      "skills": [
-        "Tailwind CSS",
-        "Shadcn"
-      ]
-    },
-    {
-      "category": "Tools",
-      "skills": [
-        "GitHub",
         "Git",
+        "GitHub",
         "Docker",
-        "Vercel",
-        "Render",
-        "Postman"
+        "Postman",
+        "Vercel"
       ]
     },
     {
-      "category": "AI Models",
+      "category": "AI",
       "skills": [
-        "OpenAI",
+        "OpenAI API",
         "Claude",
-        "Whisper",
-        "LLaMA"
+        "LLaMA",
+        "LLM Tool-Calling"
+      ]
+    },
+    {
+      "category": "Core Concepts",
+      "skills": [
+        "Data Structures & Algorithms",
+        "OOP"
+      ]
+    },
+    {
+      "category": "Soft Skills",
+      "skills": [
+        "Teamwork",
+        "Communication",
+        "Presentation",
+        "Problem Solving"
+      ]
+    },
+    {
+      "category": "Others",
+      "skills": [
+        "Geopolitics",
+        "Videography",
+        "Photography"
       ]
     }
   ]

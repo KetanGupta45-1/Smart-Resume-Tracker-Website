@@ -1,9 +1,9 @@
 import json
+import re
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import PromptTemplate
 from Models__.initalise_model import initiate_model
 from Utility__.resume_text_extract import return_text_from_pdf
-from Core__.json_utils import extract_and_fix_json
 
 class ResumeParser:
     def __init__(self, pdf_path, token):
@@ -26,80 +26,89 @@ class ResumeParser:
             raise ValueError("Resume text is empty! Check your PDF extraction function.")
 
     def setup_prompt(self):
-      schema_example = """You are a resume parser. Extract information from the resume and return ONLY a valid JSON object. 
-  Do not include any explanations, markdown formatting, or additional text.
-  Extract full LinkedIn and GitHub URLs correctly (must be inside quotes, e.g., "https://github.com/username").
-  IMPORTANT: Skills should be in a single list, not multiple brackets.
-  IMPORTANT: Categories should include Languages, Frameworks, Databases, Styling, Tools, ML/DL, Cloud Computing, DevOps, Cybersecurity, Core Computer Subjects, Soft Skills, Others.
+        schema_example = """You are a resume parser. Extract information from the resume and return ONLY a valid JSON object. 
+Do not include any explanations or markdown. Extract full LinkedIn and GitHub URLs in quotes, e.g., "https://github.com/username".
+IMPORTANT: Skills should be in a single list. Categories: Languages, Frameworks, Databases, Styling, Tools, ML/DL, Cloud Computing, DevOps, Cybersecurity, Core Computer Subjects, Soft Skills, Others.
+⚠️ Ensure JSON is syntactically correct, all arrays/objects are closed, and there is nothing outside the JSON.
 
-  Return EXACTLY this structure:
+Return EXACTLY this structure:
 
-  {{
-    "Profile": {{
-      "name": "",
-      "email": "",
-      "phone_number": "",
-      "country": "",
-      "github": "",
-      "linkedin": "",
-      "summary": ""
-    }},
-    "Education": [
-      {{
-        "institution_name": "",
-        "degree": "",
-        "field_of_study": "",
-        "cgpa_or_percent": "",
-        "start_date": "",
-        "end_date": ""
-      }}
-    ],
-    "Work Experience": [
-      {{
-        "company_name": "",
-        "job_title": "",
-        "location": "",
-        "start_date": "",
-        "end_date": "",
-        "descriptions": []
-      }}
-    ],
-    "Projects": [
-      {{
-        "project_name": "",
-        "tech_stack": "",
-        "start_date": "",
-        "end_date": "",
-        "descriptions": []
-      }}
-    ],
-    "Achievements": [
-      {{
-        "title": "",
-        "organization": "",
-        "date": "",
-        "description": ""
-      }}
-    ],
-    "Skills": [
-      {{
-        "category": "",
-        "skills": ["skill1", "skill2", "skill3"]
-      }}
-    ]
-  }}
+{{
+  "Profile": {{
+    "name": "",
+    "email": "",
+    "phone_number": "",
+    "country": "",
+    "github": "",
+    "linkedin": "",
+    "summary": ""
+  }},
+  "Education": [
+    {{
+      "institution_name": "",
+      "degree": "",
+      "field_of_study": "",
+      "cgpa_or_percent": "",
+      "start_date": "",
+      "end_date": ""
+    }}
+  ],
+  "Work Experience": [
+    {{
+      "company_name": "",
+      "job_title": "",
+      "location": "",
+      "start_date": "",
+      "end_date": "",
+      "descriptions": []
+    }}
+  ],
+  "Projects": [
+    {{
+      "project_name": "",
+      "tech_stack": "",
+      "start_date": "",
+      "end_date": "",
+      "descriptions": []
+    }}
+  ],
+  "Achievements": [
+    {{
+      "title": "",
+      "organization": "",
+      "date": "",
+      "description": ""
+    }}
+  ],
+  "Skills": [
+    {{
+      "category": "",
+      "skills": ["skill1", "skill2", "skill3"]
+    }}
+  ]
+}}
 
-  Resume Text:
-  {resume_text}
+Resume Text:
+{resume_text}
 
-  JSON Output (no markdown, just pure JSON):
-  """
+JSON Output (no markdown, just pure JSON):
+"""
+        self.prompt_template = PromptTemplate(template=schema_example, input_variables=['resume_text'])
 
-      self.prompt_template = PromptTemplate(
-          template=schema_example,
-          input_variables=['resume_text']
-      )
-
+    def fix_json(self, raw_text):
+        # Fix GitHub/LinkedIn fields
+        raw_text = re.sub(r'"github"\s*:\s*""https', r'"github": "https', raw_text)
+        raw_text = re.sub(r'"linkedin"\s*:\s*""https', r'"linkedin": "https', raw_text)
+        # Remove trailing commas before closing brackets/braces
+        raw_text = re.sub(r',\s*([}\]])', r'\1', raw_text)
+        # Auto-close braces/brackets if missing
+        raw_text += '}' * (raw_text.count('{') - raw_text.count('}'))
+        raw_text += ']' * (raw_text.count('[') - raw_text.count(']'))
+        try:
+            return json.loads(raw_text)
+        except json.JSONDecodeError as e:
+            print("❌ JSON still invalid:", e)
+            return None
 
     def process_resume(self):
         print("Processing resume...")
@@ -107,13 +116,13 @@ class ResumeParser:
         human_msg = HumanMessage(content=prompt)
         response = self.model.invoke([human_msg])
         raw_output = response.content.strip()
+        print("Raw LLM Output:")
+        print(raw_output[:1000] + "..." if len(raw_output) > 1000 else raw_output)
+        parsed_output = self.fix_json(raw_output)
 
-        parsed_output = extract_and_fix_json(raw_output)
-        
         if parsed_output:
-            print("✅ Final Parsed Structured Output:")
+            print("✅ Parsed Structured Output:")
             print(json.dumps(parsed_output, indent=2))
         else:
-            print("❌ Failed to parse any valid JSON from output")
-            
+            print("❌ Failed to parse any valid JSON")
         return parsed_output
