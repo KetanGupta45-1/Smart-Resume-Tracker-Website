@@ -27,12 +27,12 @@ def function_hu(resume_json_path, job_description, token):
     response = {
         "summary": {
             "resume_skill_count": len(resume_skills),
-            "job_skill_count": len(job_skills),
+            # "job_skill_count": len(job_skills),
             "match_percentage": round(match_score, 2),
             "matching_skills": [s for s in matching_skills if s]
         },
-        "detailed_resume_mapping": resume_result.get('matched', []),
-        "missing_job_skills": job_result.get('missing', [])
+        # "detailed_resume_mapping": resume_result.get('matched', []),
+        # "missing_job_skills": job_result.get('missing', [])
     }
 
     return response

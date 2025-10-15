@@ -26,71 +26,80 @@ class ResumeParser:
             raise ValueError("Resume text is empty! Check your PDF extraction function.")
 
     def setup_prompt(self):
-        schema_example = """You are a resume parser. Extract information from the resume and return ONLY a valid JSON object. Do not include any explanations, markdown formatting, or additional text.
-Extract full linkedIn and github links correctly (with https and do not forget slashes).
-Return EXACTLY this structure:
+      schema_example = """You are a resume parser. Extract information from the resume and return ONLY a valid JSON object. 
+  Do not include any explanations, markdown formatting, or additional text.
+  Extract full LinkedIn and GitHub URLs correctly (must be inside quotes, e.g., "https://github.com/username").
+  IMPORTANT: Skills should be in a single list, not multiple brackets.
+  IMPORTANT: Categories should include Languages, Frameworks, Databases, Styling, Tools, ML/DL, Cloud Computing, DevOps, Cybersecurity, Core Computer Subjects, Soft Skills, Others.
 
-{{
-  "Profile": {{
-    "name": "",
-    "email": "",
-    "phone_number": "",
-    "country": "",
-    "github": "",
-    "linkedin": "",
-    "summary": ""
-  }},
-  "Education": [
-    {{
-      "institution_name": "",
-      "degree": "",
-      "field_of_study": "",
-      "cgpa_or_percent": "",
-      "start_date": "",
-      "end_date": ""
-    }}
-  ],
-  "Work Experience": [
-    {{
-      "company_name": "",
-      "job_title": "",
-      "location": "",
-      "start_date": "",
-      "end_date": "",
-      "descriptions": []
-    }}
-  ],
-  "Projects": [
-    {{
-      "project_name": "",
-      "tech_stack": "",
-      "start_date": "",
-      "end_date": "",
-      "descriptions": []
-    }}
-  ],
-  "Achievements": [
-    {{
-      "title": "",
-      "organization": "",
-      "date": "",
-      "description": ""
-    }}
-  ],
-  "Skills": []
-}}
+  Return EXACTLY this structure:
 
-IMPORTANT : Skills should be in a single list not multple bracket.
+  {{
+    "Profile": {{
+      "name": "",
+      "email": "",
+      "phone_number": "",
+      "country": "",
+      "github": "",
+      "linkedin": "",
+      "summary": ""
+    }},
+    "Education": [
+      {{
+        "institution_name": "",
+        "degree": "",
+        "field_of_study": "",
+        "cgpa_or_percent": "",
+        "start_date": "",
+        "end_date": ""
+      }}
+    ],
+    "Work Experience": [
+      {{
+        "company_name": "",
+        "job_title": "",
+        "location": "",
+        "start_date": "",
+        "end_date": "",
+        "descriptions": []
+      }}
+    ],
+    "Projects": [
+      {{
+        "project_name": "",
+        "tech_stack": "",
+        "start_date": "",
+        "end_date": "",
+        "descriptions": []
+      }}
+    ],
+    "Achievements": [
+      {{
+        "title": "",
+        "organization": "",
+        "date": "",
+        "description": ""
+      }}
+    ],
+    "Skills": [
+      {{
+        "category": "",
+        "skills": ["skill1", "skill2", "skill3"]
+      }}
+    ]
+  }}
 
-Resume Text:
-{resume_text}
+  Resume Text:
+  {resume_text}
 
-JSON Output (no markdown, just pure JSON):"""
-    
-        self.prompt_template = PromptTemplate(
-            template=schema_example,
-            input_variables=['resume_text']
-        )
+  JSON Output (no markdown, just pure JSON):
+  """
+
+      self.prompt_template = PromptTemplate(
+          template=schema_example,
+          input_variables=['resume_text']
+      )
+
 
     def process_resume(self):
         print("Processing resume...")

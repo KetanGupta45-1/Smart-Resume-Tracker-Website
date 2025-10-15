@@ -1,129 +1,124 @@
 {
   "Profile": {
-    "name": "Maneesh Kumar",
-    "email": "connect.to.maneeshmkp@gmail.com",
-    "phone_number": "8077439938",
-    "country": "India",
-    "github": "https://github.com/ManeeshMKP",
-    "linkedin": "https://www.linkedin.com/",
-    "summary": "LeetCode Profile"
+    "name": "Shivank Mahor",
+    "email": "Shivank88215@gmail.com",
+    "phone_number": "+91 9131278948",
+    "country": "",
+    "github": "https://github.com/ShivankMahor",
+    "linkedin": "https://www.linkedin.com/in/shivank001",
+    "summary": ""
   },
   "Education": [
     {
-      "institution_name": "Indian Institute of Information Technology, Sonepat",
-      "degree": "Bachelor of Technology in Information Technology",
-      "field_of_study": "Information Technology",
-      "cgpa_or_percent": "8.33 / 10",
-      "start_date": "Nov 2022",
-      "end_date": "May 2026"
+      "institution_name": "Indian Institute of Information Technology",
+      "degree": "B.Tech",
+      "field_of_study": "Computer Science & Engineering",
+      "cgpa_or_percent": "",
+      "start_date": "November 2022",
+      "end_date": "June 2026(Expected)"
     }
   ],
   "Work Experience": [
     {
-      "company_name": "Internship Studio",
-      "job_title": "Software Engineer Intern",
+      "company_name": "DARWIN",
+      "job_title": "AI Automation & Full-Stack Intern",
       "location": "Remote",
-      "start_date": "Mar 2024",
-      "end_date": "Apr 2024",
+      "start_date": "March 2025",
+      "end_date": "August 2025",
       "descriptions": [
-        "Optimized business logic and improved performance for large-scale operations by using advanced C++ algorithms and efficient programming practices.",
-        "Designed and implemented a secure, modular file handling system for managing 1000+ employee records, ensuring low-latency data access in an Agile development environment."
+        "Developed and deployed multiple AI-driven systems combining LLM tool-calling, reactive orchestration loops, and custom workflows for internal automations.",
+        "Built orchestration pipelines using JavaScript and Python, integrating APIs, user prompts, and AI model calls for seamless reactive behavior.",
+        "Created a fully-automated Intern Hiring Platform handling 1000+ applicants daily, using quiz-based and timed voice assessments, evaluated with LLMs.",
+        "Deployed the platform on Vercel, ensured real-time performance, and implemented analytics and role-based access control.",
+        "Engineered full-stack features including dashboards, user interfaces, and REST APIs to monitor and manage automation flows."
       ]
     }
   ],
   "Projects": [
     {
-      "project_name": "Job Board Platform",
-      "tech_stack": "React.js, Next.js, Tailwind CSS, Node.js, Express.js, MongoDB",
+      "project_name": "Attendance Management System",
+      "tech_stack": "MERN Stack, Axios, Tailwind CSS",
       "start_date": "",
       "end_date": "",
       "descriptions": [
-        "Designed a scalable full stack job board platform with modular architecture, secure role-based access, optimized data flow, and responsive user interface to enhance performance, developer experience, and user engagement."
-      ],
-      "github": "https://github.com/ManeeshMKP/Job-Board-Platform"
+        "Real-time attendance tracker used by multiple professors at my college.",
+        "Role-based access for teachers with secure subject-wise tracking.",
+        "Generates Date-wise, Monthly, and Semester-wise reports."
+      ]
     },
     {
-      "project_name": "Travel Itinerary Application System",
-      "tech_stack": "Python, FastAPI, SQLAlchemy, Next.js",
+      "project_name": "Exam Duty / Room Allotment System",
+      "tech_stack": "Next.js, React Hook Form, Zod, Shadcn, Tailwind",
       "start_date": "",
       "end_date": "",
       "descriptions": [
-        "Built a back-end travel itinerary management system using FastAPI and SQLAlchemy with a normalized database schema that supports day-by-day accommodations, transfers, and activities.",
-        "Implemented a MCP server to deliver recommended itineraries (2-8 nights) to Phuket and Krabi based on the duration of the trip."
-      ],
-      "github": "https://github.com/ManeeshMKP/Travel-Itinerary-Application-System"
-    },
-    {
-      "project_name": "Simple Quiz Assessment Application",
-      "tech_stack": "Next.js, Tailwind CSS, Open Trivia API",
-      "start_date": "",
-      "end_date": "",
-      "descriptions": [
-        "Engineered an interactive Quiz Assessment Application using React.js and Tailwind CSS , integrating the Open Trivia API for dynamic real-time quizzes with a seamless responsive design.",
-        "Optimized performance and provided real-time user feedback, demonstrating strong front-end development and API integration skills."
-      ],
-      "github": "https://github.com/ManeeshMKP/Simple-Quiz-Assessment-Application"
+        "Automated faculty exam duty and room allocation system.",
+        "Fair duty distribution with form validation using React Hook Form & Zod.",
+        "Built responsive UI with Shadcn components and Tailwind CSS."
+      ]
     }
   ],
-  "Achievements": [
-    {
-      "title": "Solved 700+ DSA problems",
-      "organization": "CodeChef & GFG",
-      "date": "",
-      "description": "top 0.1% rank with strong focus on algorithms & optimization"
-    },
-    {
-      "title": "1553 Rating",
-      "organization": "LeetCode",
-      "date": "",
-      "description": "Global Rank 2945 in Biweekly contest 159 | 550+ Problems Solved"
-    },
-    {
-      "title": "1553 Rating (2 Stars)",
-      "organization": "CodeChef",
-      "date": "",
-      "description": "Global Rank 42 in Starters 189"
-    },
-    {
-      "title": "1719 Rating (3 stars)",
-      "organization": "GeeksforGeeks",
-      "date": "",
-      "description": ""
-    },
-    {
-      "title": "AWS Cloud Foundations Certified",
-      "organization": "Amazon",
-      "date": "",
-      "description": "Familiar with EC2, IAM, S3, CloudFront, and basic cloud deployment architecture"
-    }
-  ],
+  "Achievements": [],
   "Skills": [
-    "C++",
-    "C",
-    "Java",
-    "Python",
-    "SQL",
-    "JavaScript (ES6+)",
-    "HTML / CSS",
-    "React.js",
-    "Next.js",
-    "TypeScript",
-    "Tailwind CSS",
-    "Node.js",
-    "Express.js",
-    "FastAPI",
-    "RESTful APIs",
-    "Git/GitHub",
-    "Linux/Unix",
-    "AWS (EC2, S3, IAM)",
-    "CI / CD",
-    "Vercel",
-    "Postman",
-    "Swagger",
-    "MySQL",
-    "SQLAlchemy",
-    "MongoDB",
-    "AI / ML (basic)",
-    "Scalable system design"
+    {
+      "category": "Languages",
+      "skills": [
+        "C",
+        "C++",
+        "Java",
+        "Python",
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "Typescript"
+      ]
+    },
+    {
+      "category": "Frameworks",
+      "skills": [
+        "React",
+        "Next.js",
+        "Node.js",
+        "Express",
+        "React Hook Form",
+        "Zod",
+        "Vite"
+      ]
+    },
+    {
+      "category": "Databases",
+      "skills": [
+        "MongoDB",
+        "Mongoose",
+        "SQL"
+      ]
+    },
+    {
+      "category": "Styling",
+      "skills": [
+        "Tailwind CSS",
+        "Shadcn"
+      ]
+    },
+    {
+      "category": "Tools",
+      "skills": [
+        "GitHub",
+        "Git",
+        "Docker",
+        "Vercel",
+        "Render",
+        "Postman"
+      ]
+    },
+    {
+      "category": "AI Models",
+      "skills": [
+        "OpenAI",
+        "Claude",
+        "Whisper",
+        "LLaMA"
+      ]
+    }
   ]
 }

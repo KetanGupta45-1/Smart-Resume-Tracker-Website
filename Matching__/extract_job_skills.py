@@ -7,12 +7,12 @@ def extract_skills_from_job_description(job_description, token):
     chat_model = initiate_model(token)
     prompt_template = PromptTemplate.from_template("""
 You are an expert HR assistant specializing in skill extraction from job descriptions.
-
 TASK: Extract ONLY the specific technical and soft skills mentioned in the job description.
-
 Return ONLY a JSON array of lowercase skill names.
+                                                   
 Job Description:
 {job_description}
+
 """)
     formatted = prompt_template.format(job_description=job_description)
     try:
