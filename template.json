@@ -1,0 +1,61 @@
+{
+    "Profile": {
+        "description": {
+            "name": "",
+            "email": "",
+            "phone_number": "",
+            "country": "",
+            "github": "",
+            "linkedin": "",
+            "summary": ""
+        }
+    },
+    "Education": {
+        "description": [
+            {
+                "institution_name": "",
+                "degree": "",
+                "field_of_study": "",
+                "cgpa_or_percent": "",
+                "start_date": "",
+                "end_date": ""
+            }
+        ]
+    },
+    "Work Experience": {
+        "description": [
+            {
+                "company_name": "",
+                "job_title": "",
+                "location": "",
+                "start_date": "",
+                "end_date": "",
+                "descriptions": []
+            }
+        ]
+    },
+    "Projects": {
+        "description": [
+            {
+                "project_name": "",
+                "tech_stack": "",
+                "start_date": "",
+                "end_date": "",
+                "descriptions": []
+            }
+        ]
+    },
+    "Achievements": {
+        "description": [
+            {
+                "title": "",
+                "organization": "",
+                "date": "",
+                "description": ""
+            }
+        ]
+    },
+    "Skills": {
+        "description": []
+    }
+}

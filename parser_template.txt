@@ -1,0 +1,47 @@
+Profile
+-----------------
+Name	
+Email	
+Phone	
+Location	
+Links(github, linkedin)
+Summary
+
+Education
+-------------------------
+College Name
+Degree	
+CGPA/ GPA	
+Date(Start and End)	
+
+School Name	
+CGPA/ Percent	
+Date
+	
+
+Work Experience
+------------------------
+Company	Name
+Job Title	
+Date	
+Descriptions
+
+
+Projects
+---------------------------
+(You need to address in points like project 1, 2 ...)
+
+Project Name
+TechStack 
+Date (Start and End)	
+Descriptions (Points given)
+
+
+Skills
+--------------------
+Descriptions
+
+
+
+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
+

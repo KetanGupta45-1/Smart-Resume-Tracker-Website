@@ -1,0 +1,889 @@
+### DIRECTORY: Core__
+### FILE: json_utils.py
+
+import re, json
+
+def extract_and_fix_json(text):
+    if not text or not isinstance(text, str):
+        return {}
+ 
+    text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).strip("` \n")
+
+    text = re.sub(r"<[^>]+>", "", text)
+
+    match = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", text)
+    if not match:
+        return {}
+
+    json_str = match.group(1).strip()
+
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        print(f"⚠️ Initial parse failed at position {e.pos}: {str(e)}")
+        print(f"⚠️ Text length: {len(json_str)} characters")
+        print(f"⚠️ Attempting to fix JSON...")
+
+    json_str = re.sub(r",\s*([}\]])", r"\1", json_str)  
+    json_str = re.sub(r"\\'", "'", json_str) 
+    
+    json_str = re.sub(r'(\w+)(?=\s*:)', r'"\1"', json_str)
+    
+    json_str = json_str.replace('\n', ' ').replace('\r', ' ')
+    json_str = re.sub(r"\s+", " ", json_str).strip()
+
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        print("❌ JSON parsing failed after fixes:", str(e))
+        print("Problematic text snippet:", json_str[:500])
+        
+        try:
+            open_braces = json_str.count('{')
+            close_braces = json_str.count('}')
+            open_brackets = json_str.count('[')
+            close_brackets = json_str.count(']')
+            
+            if json_str.count('"') % 2 != 0:
+                print("⚠️ Detected incomplete string, attempting to close it...")
+                json_str += '"'
+            
+            # Close any incomplete arrays
+            if open_brackets > close_brackets:
+                print(f"⚠️ Closing {open_brackets - close_brackets} incomplete arrays...")
+                json_str += ']' * (open_brackets - close_brackets)
+            
+            # Close any incomplete objects
+            if open_braces > close_braces:
+                print(f"⚠️ Closing {open_braces - close_braces} incomplete objects...")
+                json_str += '}' * (open_braces - close_braces)
+            
+            print("✓ Attempting to parse completed JSON...")
+            result = json.loads(json_str)
+            print("✅ Successfully recovered incomplete JSON!")
+            return result
+            
+        except Exception as completion_error:
+            print(f"❌ JSON completion failed: {str(completion_error)}")
+            pass
+            
+        return {}
+
+
+
+### DIRECTORY: Core__
+### FILE: resume_parser.py
+
+import json
+from langchain_core.messages import HumanMessage
+from langchain_core.prompts import PromptTemplate
+from Models__.initalise_model import initiate_model
+from Utility__.resume_text_extract import return_text_from_pdf
+from Core__.json_utils import extract_and_fix_json
+
+class ResumeParser:
+    def __init__(self, pdf_path, token):
+        self.pdf_path = pdf_path
+        self.token = token
+        self.model = None
+        self.resume_text = ""
+        self.prompt_template = None
+
+    def initialize_model(self):
+        print("Initializing model...")
+        self.model = initiate_model(self.token)
+        print("Model initialized.")
+
+    def extract_resume_text(self):
+        print("Extracting resume text from PDF...")
+        self.resume_text = return_text_from_pdf(self.pdf_path)
+        print("Resume text length (words):", len(self.resume_text.split()))
+        if not self.resume_text:
+            raise ValueError("Resume text is empty! Check your PDF extraction function.")
+
+    def setup_prompt(self):
+        schema_example = """You are a resume parser. Extract information from the resume and return ONLY a valid JSON object. Do not include any explanations, markdown formatting, or additional text.
+
+Return EXACTLY this structure:
+
+{{
+  "Profile": {{
+    "name": "",
+    "email": "",
+    "phone_number": "",
+    "country": "",
+    "github": "",
+    "linkedin": "",
+    "summary": ""
+  }},
+  "Education": [
+    {{
+      "institution_name": "",
+      "degree": "",
+      "field_of_study": "",
+      "cgpa_or_percent": "",
+      "start_date": "",
+      "end_date": ""
+    }}
+  ],
+  "Work Experience": [
+    {{
+      "company_name": "",
+      "job_title": "",
+      "location": "",
+      "start_date": "",
+      "end_date": "",
+      "descriptions": []
+    }}
+  ],
+  "Projects": [
+    {{
+      "project_name": "",
+      "tech_stack": "",
+      "start_date": "",
+      "end_date": "",
+      "descriptions": []
+    }}
+  ],
+  "Achievements": [
+    {{
+      "title": "",
+      "organization": "",
+      "date": "",
+      "description": ""
+    }}
+  ],
+  "Skills": []
+}}
+
+IMPORTANT : Skills should be in a single list not multple bracket.
+
+Resume Text:
+{resume_text}
+
+JSON Output (no markdown, just pure JSON):"""
+    
+        self.prompt_template = PromptTemplate(
+            template=schema_example,
+            input_variables=['resume_text']
+        )
+
+    def process_resume(self):
+        print("Processing resume...")
+        prompt = self.prompt_template.format(resume_text=self.resume_text)
+        human_msg = HumanMessage(content=prompt)
+        response = self.model.invoke([human_msg])
+        raw_output = response.content.strip()
+
+        parsed_output = extract_and_fix_json(raw_output)
+        
+        if parsed_output:
+            print("✅ Final Parsed Structured Output:")
+            print(json.dumps(parsed_output, indent=2))
+        else:
+            print("❌ Failed to parse any valid JSON from output")
+            
+        return parsed_output
+
+
+
+### DIRECTORY: Improvement__
+### FILE: clean_text.py
+
+import re
+
+def clean_text_list(text_list):
+    cleaned = []
+    for text in text_list:
+        if not isinstance(text, str) or not text.strip():
+            continue
+        text = re.sub(r'^[\-\*\•\u2022]\s*', '', text)
+        text = re.sub(r'\s+', ' ', text)
+        cleaned.append(text.strip())
+    return cleaned
+
+
+
+
+### DIRECTORY: Improvement__
+### FILE: extract_json.py
+
+import json
+
+def extract_sections(json_path, key=None):
+    """
+    Extract specific section from resume JSON.
+    If key is None, returns all sections flattened.
+    """
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"error reading resume json: {e}")
+        return []
+
+    sections = []
+    keys_to_extract = [key] if key else ['Projects', 'Work Experience', 'Achievements']
+
+    if isinstance(data, dict):
+        for k in keys_to_extract:
+            raw = data.get(k) or []
+            for item in raw:
+                if isinstance(item, dict) and 'descriptions' in item:
+                    for desc in item['descriptions']:
+                        if isinstance(desc, str) and desc.strip():
+                            sections.append(desc.strip())
+                elif isinstance(item, str) and item.strip():
+                    sections.append(item.strip())
+
+    return sections
+
+
+
+
+### DIRECTORY: Improvement__
+### FILE: llm_process.py
+
+from langchain.schema import AIMessage
+
+def get_resume_prompt(section_name, sections_list, role=None):
+    role_text = f"for the role of {role}" if role else ""
+    sections_text = "\n".join(f"- {s}" for s in sections_list)
+
+    prompt = f"""
+You are a professional resume editor. Rewrite the following {section_name} sections {role_text} 
+to make them more official, concise, and impactful, using resume-style language.
+Keep the meaning intact but improve readability, quantification, and action words.
+
+Sections to improve:
+{sections_text}
+
+Return the improved sections as a numbered list, keeping each item separate.
+Do not add extra commentary.
+"""
+    return prompt
+
+def llm_process_grouped(sections_dict, llm, role=None):
+    grouped_output = {}
+    for section_name, cleaned_sections in sections_dict.items():
+        if not cleaned_sections:
+            continue
+
+        prompt = get_resume_prompt(section_name, cleaned_sections, role=role)
+        response = llm.invoke(prompt)
+
+        raw_output = response.content if isinstance(response, AIMessage) else str(response)
+
+        modified_sections = []
+        for line in raw_output.split("\n"):
+            line = line.strip()
+            if line and (line[0].isdigit() and line[1:3] in [". ", ") "]):
+                line = line.split(". ", 1)[1] if ". " in line else line
+                modified_sections.append(line.strip())
+            elif line:
+                modified_sections.append(line.strip())
+
+        grouped_output[section_name] = modified_sections
+
+    return grouped_output
+
+
+
+
+### DIRECTORY: Improvement__
+### FILE: pipeline.py
+
+from Improvement__.extract_json import extract_sections
+from Improvement__.clean_text import clean_text_list
+from Improvement__.llm_process import llm_process_grouped
+from Improvement__.setup_llm import initiate_model
+
+def get_modified_resume_sections_grouped(json_path, role=None, api_token=None):
+    """
+    Full pipeline: extract -> clean -> LLM -> grouped modified sections.
+    """
+    raw_sections_dict = {}
+    for section_name in ["Projects", "Work Experience", "Achievements"]:
+        raw_sections = extract_sections(json_path, key=section_name)
+        raw_sections_dict[section_name] = clean_text_list(raw_sections)
+
+    if not api_token:
+        raise ValueError("API token is required to initialize the LLM")
+    llm = initiate_model(api_token)
+
+    modified_sections_grouped = llm_process_grouped(raw_sections_dict, llm, role=role)
+
+    return modified_sections_grouped
+
+
+
+
+### DIRECTORY: Improvement__
+### FILE: setup_llm.py
+
+from langchain_groq import ChatGroq
+
+def initiate_model(token):
+    model_name = "llama-3.1-8b-instant"
+    chat_model = ChatGroq(
+        model=model_name,
+        temperature=0.0,
+        max_tokens=4096,
+        api_key=token
+    )
+    print("LLM initialized")
+    return chat_model
+
+
+
+
+### DIRECTORY: Improvement__
+### FILE: __init__.py
+
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: calculate.py
+
+from Matching__.skill_matcher import hybrid_match
+
+def calculate_skill_match(resume_skills, job_skills):
+    resume_result = hybrid_match(resume_skills)
+    job_result = hybrid_match(job_skills)
+
+    matched_job_skills = {}
+    for m in job_result.get('matched', []):
+        key = m.get('mapped_to')
+        conf = m.get('confidence', 0.0)
+        if key:
+            matched_job_skills[key] = max(matched_job_skills.get(key, 0.0), conf)
+
+    total_conf = 0.0
+    count = 0
+
+    for j in job_result.get('matched', []):
+        count += 1
+        total_conf += j.get('confidence', 0.0)
+
+    for j in job_result.get('missing', []):
+        count += 1
+        total_conf += j.get('confidence', 0.0)
+
+    score = (total_conf / count) * 100 if count > 0 else 0.0
+    matching_skills = [m.get('mapped_to') for m in job_result.get('matched', []) if m.get('mapped_to')]
+
+    return round(score, 2), matching_skills, resume_result, job_result
+
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: config.py
+
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+CONFIDENCE_THRESHOLD = 0.75
+EMBEDDING_BATCH_SIZE = 64
+EMBEDDING_CACHE_PATH = "skill_embeddings.pt"
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: extract_job_skills.py
+
+from langchain.prompts import PromptTemplate
+from Matching__.setup_llm import initiate_model
+import json
+import re
+
+def extract_skills_from_job_description(job_description, token):
+    chat_model = initiate_model(token)
+    prompt_template = PromptTemplate.from_template("""
+You are an expert HR assistant specializing in skill extraction from job descriptions.
+
+TASK: Extract ONLY the specific technical and soft skills mentioned in the job description.
+
+Return ONLY a JSON array of lowercase skill names.
+Job Description:
+{job_description}
+""")
+    formatted = prompt_template.format(job_description=job_description)
+    try:
+        response = chat_model.invoke(formatted)
+        text = response.content.strip()
+        text = text.replace('*', '').replace('-', '').replace('•', '')
+        try:
+            arr = json.loads(text)
+        except Exception:
+            arr = []
+            for line in text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                line = re.sub(r'^\d+\.\s*', '', line)
+                line = re.sub(r'[^\w\s\-\&\+]', '', line).strip()
+                if line:
+                    arr.append(line.lower())
+        arr = list(dict.fromkeys([a.lower().strip() for a in arr if a and isinstance(a, str)]))
+        print(f"extracted skills from jd: {arr}")
+        return arr
+    except Exception as e:
+        print(f"error extracting from jd: {e}")
+        return []
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: extract_json.py
+
+import json
+
+def extract_skills(json_path):
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"error reading resume json: {e}")
+        return []
+    skills = []
+    if isinstance(data, dict) and 'Skills' in data:
+        raw = data.get('Skills') or []
+        for s in raw:
+            if isinstance(s, str) and s.strip():
+                skills.append(s.strip())
+    print(f"skills in resume {json_path}: {skills}")
+    return skills
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: semantic_skill_matcher.py
+
+from sentence_transformers import SentenceTransformer, util
+import torch
+import os
+from Matching__.config import EMBEDDING_MODEL, EMBEDDING_CACHE_PATH, EMBEDDING_BATCH_SIZE
+
+class SemanticSkillMatcher:
+    def __init__(self, target_skill_texts, model_name=EMBEDDING_MODEL, cache_path=EMBEDDING_CACHE_PATH, batch_size=EMBEDDING_BATCH_SIZE):
+        self.model = SentenceTransformer(model_name)
+        self.targets = list(dict.fromkeys(target_skill_texts))
+        self.cache_path = cache_path
+        self.batch_size = batch_size
+        self.device = self.model.device
+        self._load_or_build_embeddings()
+
+    def _load_or_build_embeddings(self):
+        if os.path.exists(self.cache_path):
+            try:
+                data = torch.load(self.cache_path)
+                self.target_embeddings = data['embeddings'].to(self.device)
+                self.targets = data['targets']
+                return
+            except Exception:
+                pass
+        all_embs = []
+        for i in range(0, len(self.targets), self.batch_size):
+            batch = self.targets[i:i + self.batch_size]
+            embs = self.model.encode(batch, convert_to_tensor=True, device=self.device)
+            all_embs.append(embs)
+        if all_embs:
+            self.target_embeddings = torch.cat(all_embs, dim=0)
+        else:
+            self.target_embeddings = self.model.encode(self.targets, convert_to_tensor=True, device=self.device)
+        try:
+            torch.save({'targets': self.targets, 'embeddings': self.target_embeddings.cpu()}, self.cache_path)
+        except Exception:
+            pass
+
+    def match(self, user_skill_texts):
+        user_embs = self.model.encode(user_skill_texts, convert_to_tensor=True, device=self.device)
+        results = []
+        for i, u_emb in enumerate(user_embs):
+            scores = util.cos_sim(u_emb, self.target_embeddings)[0]
+            best_score, best_idx = torch.max(scores, dim=0)
+            best_score = float(best_score.item())
+            best_idx = int(best_idx.item())
+            results.append((user_skill_texts[i], self.targets[best_idx], best_score))
+        return results
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: setup_llm.py
+
+from langchain_groq import ChatGroq
+
+def initiate_model(token):
+    model_name = "llama-3.1-8b-instant"
+    chat_model = ChatGroq(
+        model=model_name,
+        temperature=0.0,
+        max_tokens=4096,
+        api_key=token
+    )
+    print("LLM initialized")
+    return chat_model
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: skill_mapping.py
+
+skill_mapping = {
+    # Programming Languages
+    'javascript': 'javascript', 'js': 'javascript', 'typescript': 'typescript', 'ts': 'typescript',
+    'python': 'python', 'py': 'python', 'java': 'java', 'c++': 'cpp', 'cpp': 'cpp', 'cplusplus': 'cpp',
+    'c#': 'csharp', 'csharp': 'csharp', 'go': 'golang', 'golang': 'golang', 'rust': 'rust',
+    'kotlin': 'kotlin', 'swift': 'swift', 'php': 'php', 'ruby': 'ruby', 'scala': 'scala',
+    'r': 'r', 'matlab': 'matlab', 'perl': 'perl', 'haskell': 'haskell',
+    # Web Frameworks - Frontend
+    'react.js': 'react', 'reactjs': 'react', 'react': 'react', 'vue.js': 'vue', 'vuejs': 'vue',
+    'vue': 'vue', 'angular': 'angular', 'angular.js': 'angular', 'angularjs': 'angular',
+    'svelte': 'svelte', 'next.js': 'next', 'nextjs': 'next', 'next': 'next', 'nuxt.js': 'nuxt',
+    'nuxtjs': 'nuxt', 'nuxt': 'nuxt', 'gatsby': 'gatsby',
+    # Web Frameworks - Backend
+    'node.js': 'node', 'nodejs': 'node', 'node': 'node', 'express.js': 'express', 'expressjs': 'express',
+    'express': 'express', 'django': 'django', 'django framework': 'django', 'flask': 'flask',
+    'fastapi': 'fastapi', 'spring': 'spring', 'spring boot': 'spring', 'spring framework': 'spring',
+    'laravel': 'laravel', 'ruby on rails': 'rails', 'rails': 'rails', 'asp.net': 'aspnet', 'aspnet': 'aspnet',
+    # Mobile Frameworks
+    'react native': 'react native', 'react-native': 'react native', 'flutter': 'flutter',
+    'ionic': 'ionic', 'xamarin': 'xamarin',
+    # CSS Frameworks & Styling
+    'tailwind css': 'tailwind', 'tailwind': 'tailwind', 'bootstrap': 'bootstrap',
+    'material-ui': 'material ui', 'material ui': 'material ui', 'mui': 'material ui',
+    'sass': 'sass', 'scss': 'sass', 'less': 'less', 'styled components': 'styled components',
+    'styled-components': 'styled components', 'css': 'css', 'css3': 'css', 'html': 'html', 'html5': 'html',
+    # Databases
+    'postgresql': 'sql', 'postgres': 'sql', 'mysql': 'sql', 'mariadb': 'sql', 'sql server': 'sql',
+    'microsoft sql server': 'sql', 'oracle': 'sql', 'sqlite': 'sql', 'mongodb': 'nosql',
+    'cassandra': 'nosql', 'redis': 'nosql', 'elasticsearch': 'nosql', 'dynamodb': 'nosql',
+    'firebase': 'nosql', 'firestore': 'nosql',
+    # Cloud Platforms
+    'aws': 'cloud', 'amazon web services': 'cloud', 'azure': 'cloud', 'microsoft azure': 'cloud',
+    'google cloud': 'cloud', 'gcp': 'cloud', 'google cloud platform': 'cloud', 'ibm cloud': 'cloud',
+    'oracle cloud': 'cloud', 'digital ocean': 'cloud', 'digitalocean': 'cloud', 'heroku': 'cloud',
+    # Cloud Services
+    'aws ec2': 'cloud computing', 'aws lambda': 'serverless', 'lambda': 'serverless',
+    'azure functions': 'serverless', 'google cloud functions': 'serverless', 'docker': 'containerization',
+    'kubernetes': 'containerization', 'k8s': 'containerization', 'terraform': 'iac',
+    'infrastructure as code': 'iac', 'cloudformation': 'iac',
+    # DevOps & Tools
+    'git': 'version control', 'github': 'version control', 'gitlab': 'version control',
+    'bitbucket': 'version control', 'jenkins': 'ci/cd', 'ci/cd': 'ci/cd', 'continuous integration': 'ci/cd',
+    'continuous deployment': 'ci/cd', 'github actions': 'ci/cd', 'gitlab ci': 'ci/cd',
+    'circleci': 'ci/cd', 'travis ci': 'ci/cd',
+    # API & Web Services
+    'rest api': 'api', 'restful api': 'api', 'rest': 'api', 'graphql': 'api', 'soap': 'api',
+    'api development': 'api', 'web services': 'api', 'microservices': 'microservices',
+    'microservice architecture': 'microservices',
+    # Testing
+    'jest': 'testing', 'mocha': 'testing', 'chai': 'testing', 'cypress': 'testing', 'selenium': 'testing',
+    'junit': 'testing', 'pytest': 'testing', 'unit testing': 'testing', 'integration testing': 'testing',
+    'test automation': 'testing',
+    # Methodologies & Processes
+    'agile': 'agile', 'agile methodology': 'agile', 'agile development': 'agile', 'scrum': 'agile',
+    'kanban': 'agile', 'waterfall': 'waterfall', 'devops': 'devops', 'devsecops': 'devops',
+    # AI/ML
+    'machine learning': 'machine learning', 'ml': 'machine learning', 'deep learning': 'deep learning',
+    'neural networks': 'deep learning', 'natural language processing': 'nlp', 'nlp': 'nlp',
+    'computer vision': 'computer vision', 'tensorflow': 'tensorflow', 'pytorch': 'pytorch',
+    'keras': 'keras', 'scikit-learn': 'scikit learn', 'scikit learn': 'scikit learn',
+    # Data Science
+    'data analysis': 'data analysis', 'data visualization': 'data visualization', 'tableau': 'data visualization',
+    'power bi': 'data visualization', 'pandas': 'pandas', 'numpy': 'numpy', 'jupyter': 'jupyter',
+    # Mobile Development
+    'android development': 'android', 'ios development': 'ios', 'mobile development': 'mobile',
+    'swiftui': 'ios', 'jetpack compose': 'android',
+    # Desktop Development
+    'electron': 'electron', 'qt': 'qt', 'wxwidgets': 'gui',
+    # Game Development
+    'unity': 'unity', 'unreal engine': 'unreal', 'game development': 'game dev',
+    # Security
+    'cybersecurity': 'security', 'information security': 'security', 'network security': 'security',
+    'application security': 'security', 'penetration testing': 'security', 'ethical hacking': 'security',
+    'cryptography': 'security',
+    # Networking
+    'tcp/ip': 'networking', 'http': 'networking', 'https': 'networking', 'dns': 'networking',
+    'ssl': 'networking', 'tls': 'networking', 'cdn': 'networking',
+    # Operating Systems
+    'linux': 'linux', 'unix': 'linux', 'windows': 'windows', 'macos': 'macos', 'ubuntu': 'linux',
+    'centos': 'linux', 'red hat': 'linux',
+    # Soft Skills
+    'communication': 'communication', 'communication skills': 'communication', 'verbal communication': 'communication',
+    'written communication': 'communication', 'teamwork': 'teamwork', 'collaboration': 'teamwork',
+    'leadership': 'leadership', 'project management': 'project management', 'time management': 'time management',
+    'problem solving': 'problem solving', 'critical thinking': 'critical thinking', 'creativity': 'creativity',
+    'adaptability': 'adaptability', 'attention to detail': 'attention to detail',
+    # Business Skills
+    'product management': 'product management', 'business analysis': 'business analysis',
+    'stakeholder management': 'stakeholder management', 'requirements gathering': 'requirements gathering',
+    'user stories': 'user stories',
+    # Design
+    'ui design': 'ui/ux', 'ux design': 'ui/ux', 'user interface': 'ui/ux', 'user experience': 'ui/ux',
+    'figma': 'ui/ux', 'adobe xd': 'ui/ux', 'sketch': 'ui/ux', 'wireframing': 'ui/ux', 'prototyping': 'ui/ux',
+    # Content Management
+    'wordpress': 'cms', 'contentful': 'cms', 'sanity': 'cms', 'strapi': 'cms',
+    # E-commerce
+    'shopify': 'ecommerce', 'woocommerce': 'ecommerce', 'magento': 'ecommerce',
+    # Monitoring & Analytics
+    'grafana': 'monitoring', 'prometheus': 'monitoring', 'splunk': 'monitoring', 'datadog': 'monitoring',
+    'google analytics': 'analytics',
+    # Message Brokers
+    'kafka': 'message broker', 'rabbitmq': 'message broker', 'activemq': 'message broker',
+    # Version Control Advanced
+    'git flow': 'git workflow', 'git branching': 'git workflow', 'merge conflicts': 'git workflow',
+    # Documentation
+    'technical writing': 'documentation', 'documentation': 'documentation', 'api documentation': 'documentation',
+    # Performance
+    'performance optimization': 'performance', 'code optimization': 'performance', 'load testing': 'performance',
+    # Architecture
+    'system design': 'system design', 'software architecture': 'software architecture',
+    'design patterns': 'design patterns', 'clean architecture': 'software architecture',
+    # Quality Assurance
+    'qa': 'quality assurance', 'quality assurance': 'quality assurance', 'software testing': 'quality assurance',
+}
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: skill_matcher.py
+
+from Matching__.skill_mapping import skill_mapping
+from Matching__.semantic_skill_matcher import SemanticSkillMatcher
+from Matching__.utils import normalize_skill_text, expand_compound_skill
+from Matching__.config import CONFIDENCE_THRESHOLD
+
+def _get_unique_normalized_targets():
+    vals = list(skill_mapping.values())
+    uniq = list(dict.fromkeys(vals))
+    return uniq
+
+def hybrid_match(user_skills):
+    normalized_inputs = []
+    for s in user_skills:
+        pieces = expand_compound_skill(s)
+        for p in pieces:
+            normalized_inputs.append(normalize_skill_text(p))
+
+    exact_matches = {}
+    remaining = []
+
+    for s in normalized_inputs:
+        if s in skill_mapping:
+            exact_matches[s] = {'mapped_to': skill_mapping[s], 'confidence': 1.0, 'method': 'exact_key'}
+        elif s in skill_mapping.values():
+            exact_matches[s] = {'mapped_to': s, 'confidence': 0.99, 'method': 'exact_value'}
+        else:
+            remaining.append(s)
+
+    targets = _get_unique_normalized_targets()
+    sem_results = SemanticSkillMatcher(targets).match(remaining) if remaining else []
+
+    matched = []
+    missing = []
+
+    for s, info in exact_matches.items():
+        matched.append({'input': s, 'mapped_to': info['mapped_to'], 'confidence': round(info['confidence'], 3), 'method': info['method']})
+
+    for orig, mapped, score in sem_results:
+        c = round(score, 3)
+        if c >= CONFIDENCE_THRESHOLD:
+            matched.append({'input': orig, 'mapped_to': mapped, 'confidence': c, 'method': 'semantic'})
+        else:
+            missing.append({'input': orig, 'closest_match': mapped, 'confidence': c, 'method': 'semantic'})
+
+    return {'matched': matched, 'missing': missing}
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: utils.py
+
+import re
+
+def normalize_skill_text(skill):
+    s = skill.lower().strip()
+    s = s.replace('&', ' and ')
+    s = re.sub(r'[\u2018\u2019\u201c\u201d]', '', s)
+    s = re.sub(r'[^a-z0-9\s\.\+\-]', ' ', s)
+    s = re.sub(r'\s+', ' ', s).strip()
+    s = s.replace('  ', ' ')
+    return s
+
+def expand_compound_skill(skill):
+    skill = skill.strip()
+    if '&' in skill or ' and ' in skill:
+        parts = re.split(r'&| and ', skill)
+        return [p.strip() for p in parts if p.strip()]
+    if '/' in skill:
+        parts = skill.split('/')
+        return [p.strip() for p in parts if p.strip()]
+    return [skill]
+
+
+
+
+### DIRECTORY: Matching__
+### FILE: __init__.py
+
+
+
+
+
+### DIRECTORY: Models__
+### FILE: initalise_model.py
+
+from langchain_groq import ChatGroq
+
+def initiate_model(token=None):
+    model_name = "llama-3.1-8b-instant"
+
+    chat_model = ChatGroq(
+        model=model_name,
+        temperature=0.0,
+        max_tokens=4096,
+        api_key=token
+    )
+    return chat_model
+
+
+
+
+### DIRECTORY: Utility__
+### FILE: flattening_json.py
+
+from langchain.output_parsers import ResponseSchema
+
+def flatten_template(nested_template):
+    schemas = []
+
+    for section, content in nested_template.items():
+        desc = content["description"]
+        if isinstance(desc, dict):
+            for key in desc.keys():
+                schemas.append(ResponseSchema(name=f"{section}.{key}", description=f"{key} of {section}"))
+        elif isinstance(desc, list) and len(desc) > 0 and isinstance(desc[0], dict):
+            for key in desc[0].keys():
+                schemas.append(ResponseSchema(name=f"{section}.[].{key}", description=f"{key} of each item in {section}"))
+        elif isinstance(desc, list):
+            schemas.append(ResponseSchema(name=section, description=section))
+    return schemas
+
+
+
+
+### DIRECTORY: Utility__
+### FILE: resume_text_extract.py
+
+from PyPDF2 import PdfReader
+
+def return_text_from_pdf(pdf_path):
+    pdf = PdfReader(pdf_path)
+    text = ""
+
+    for page in pdf.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + " "
+    
+    return text.strip()
+
+
+
+
+### FILE: imp.py
+
+from Improvement__.pipeline import get_modified_resume_sections_grouped
+
+resume_json = "D:/Projects/Machine and Deep Learning/Resume Project/parsed_data.json"
+api_token = "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"
+role = "Web Developer"
+
+modified_sections = get_modified_resume_sections_grouped(resume_json, role=role, api_token=api_token)
+
+# Pretty print grouped sections
+for section, items in modified_sections.items():
+    print(f"\n____________ {section} ______________")
+    for i, item in enumerate(items, 1):
+        print(f"{i}. {item}")
+
+
+
+### FILE: main.py
+
+from Core__.resume_parser import ResumeParser
+import json
+
+token = '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'
+pdf_path = 'Shivank Resume.pdf'
+template_path = 'D:/Projects/Machine and Deep Learning/Resume Project/template.json'
+
+parser = ResumeParser(pdf_path, token)
+parser.initialize_model()
+parser.extract_resume_text()
+parser.setup_prompt()
+parsed_resume = parser.process_resume()
+
+
+if parsed_resume:
+    output_path = "parsed_data.json"
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(parsed_resume, f, indent=2, ensure_ascii=False)
+    print(f"💾 Parsed data successfully saved to '{output_path}'")
+else:
+    print("❌ No valid JSON parsed — nothing saved.")
+
+
+
+### FILE: call_matching.py
+
+from Matching__.extract_json import extract_skills
+from Matching__.extract_job_skills import extract_skills_from_job_description
+from Matching__.calculate import calculate_skill_match
+
+GROQ_API_TOKEN = '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'
+resume_json_path = 'D:/Projects/Machine and Deep Learning/Resume Project/parsed_data.json'
+
+job_description = """
+We are looking for a Full Stack Developer with strong experience in:
+- Python and Django framework
+- React.js and JavaScript
+- Database design with PostgreSQL
+- REST API development
+- Cloud platforms like AWS
+- Version control with Git
+- Agile methodology experience
+- Good communication skills
+"""
+
+resume_skills = extract_skills(resume_json_path)
+job_skills = extract_skills_from_job_description(job_description, GROQ_API_TOKEN)
+
+match_score, matching_skills, resume_result, job_result = calculate_skill_match(resume_skills, job_skills)
+
+print("SKILL MATCHING RESULTS")
+print("-"*50)
+print(f"Resume has {len(resume_skills)} skills")
+print(f"Job requires {len(job_skills)} skills")
+print(f"Match Percentage: {match_score:.2f}%")
+print(f"Matching Skills: {', '.join([s for s in matching_skills if s])}")
+
+print("\n--- Detailed Resume Skill Mapping ---")
+for m in resume_result.get('matched', []):
+    print(f"{m['input']} -> {m['mapped_to']} | Confidence: {m['confidence']} | Method: {m['method']}")
+
+print("\n--- Missing Job Skills ---")
+for m in job_result.get('missing', []):
+    print(f"{m['input']} -> Closest Match: {m.get('closest_match')} | Confidence: {m.get('confidence')} | Method: {m['method']}")
+
