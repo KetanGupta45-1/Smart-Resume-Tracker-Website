@@ -1,7 +1,7 @@
 from Core__.resume_parser import ResumeParser
 import json
 
-token = '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'
+token = 'yes sir'
 pdf_path = 'Shivank Resume.pdf'
 template_path = 'D:/Projects/Machine and Deep Learning/Resume Project/template.json'
 

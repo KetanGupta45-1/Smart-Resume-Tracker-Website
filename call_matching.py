@@ -2,7 +2,7 @@ from Matching__.extract_json import extract_skills
 from Matching__.extract_job_skills import extract_skills_from_job_description
 from Matching__.calculate import calculate_skill_match
 
-GROQ_API_TOKEN = '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'
+GROQ_API_TOKEN = 'yes sir'
 resume_json_path = 'D:/Projects/Machine and Deep Learning/Resume Project/parsed_data.json'
 
 job_description = """
