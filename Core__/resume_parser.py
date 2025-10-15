@@ -27,7 +27,7 @@ class ResumeParser:
 
     def setup_prompt(self):
         schema_example = """You are a resume parser. Extract information from the resume and return ONLY a valid JSON object. Do not include any explanations, markdown formatting, or additional text.
-
+Extract full linkedIn and github links correctly (with https and do not forget slashes).
 Return EXACTLY this structure:
 
 {{

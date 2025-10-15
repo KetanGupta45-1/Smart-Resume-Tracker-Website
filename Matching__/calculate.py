@@ -1,29 +1,32 @@
 from Matching__.skill_matcher import hybrid_match
 
 def calculate_skill_match(resume_skills, job_skills):
+    # Run hybrid match for both sides
     resume_result = hybrid_match(resume_skills)
     job_result = hybrid_match(job_skills)
 
-    matched_job_skills = {}
-    for m in job_result.get('matched', []):
-        key = m.get('mapped_to')
-        conf = m.get('confidence', 0.0)
-        if key:
-            matched_job_skills[key] = max(matched_job_skills.get(key, 0.0), conf)
+    # Extract mapped skills for comparison
+    resume_skill_names = [r['mapped_to'] for r in resume_result['matched']]
+    job_skill_names = [j['mapped_to'] for j in job_result['matched']]
 
-    total_conf = 0.0
-    count = 0
+    # Calculate overlap between resume and job skills
+    matched_skills = [skill for skill in job_skill_names if skill in resume_skill_names]
+    missing_skills = [skill for skill in job_skill_names if skill not in resume_skill_names]
 
-    for j in job_result.get('matched', []):
-        count += 1
-        total_conf += j.get('confidence', 0.0)
+    # Compute score based on match ratio
+    total_skills = len(job_skill_names)
+    matched_count = len(matched_skills)
+    score = (matched_count / total_skills) * 100 if total_skills > 0 else 0.0
 
-    for j in job_result.get('missing', []):
-        count += 1
-        total_conf += j.get('confidence', 0.0)
+    # Weighted improvement: add semantic confidence for matches
+    total_conf = 0
+    for j in job_result['matched']:
+        if j['mapped_to'] in resume_skill_names:
+            total_conf += j['confidence']
 
-    score = (total_conf / count) * 100 if count > 0 else 0.0
-    matching_skills = [m.get('mapped_to') for m in job_result.get('matched', []) if m.get('mapped_to')]
+    if matched_count > 0:
+        score = ((score + (total_conf / matched_count) * 100) / 2)  # balance between match ratio & confidence
 
-    return round(score, 2), matching_skills, resume_result, job_result
+
+    return round(score, 2), matched_skills, resume_result, job_result
 
